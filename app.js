@@ -1,44 +1,42 @@
-const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
+const search_Btn = document.getElementById("search-btn");
+const search_Box = document.querySelector(".search-box");
+const resultContainer = document.querySelector(".result");
 
-const search_Btn = document.getElementById('search-btn')
+const renderError = (response) => {
+  if (response.title) throw new Error(`${response.title}`);
+};
 
-search_Btn.addEventListener('click', function () {
-    const word = document.getElementById('inp-word').value;
+function renderWord(data, word) {
+  const details = data.meanings[0].partOfSpeech;
+  const meaning = data.meanings[0].definitions[0].definition;
+  const example = data.meanings[0].definitions[0].example || "";
 
-    fetch(`${url}${word}`)
-    .then((response) => response.json())
-    .then((data) => {
-        console.log(data);
+  const html = `
+<div class="word"> <h3>${word}</h3> </div>
+    <div class="details"><p>${details}</p></div>
+    <p class="word-meaning">${meaning}</p>
+    <p class="word-example">${example}</p>`;
 
-        result.innerHTML = `
-                    <div class="word">
-                             <h3>${word}</h3>
-                           
-                         </div>
-                         <div class="details">
-                         <p>${data[0].meanings[0].partOfSpeech}</p>
-                         </div>
-                         <p class="word-meaning">
-                            ${data[0].meanings[0].definitions[0].definition}
-                         </p>
-                         <p class="word-example">
-                             ${data[0].meanings[0].definitions[0].example || ""}
-                         </p>`;
-    })
+  resultContainer.innerHTML = html;
+}
 
-    
+const loadResult = async () => {
+  try {
+    const inputWord = document.getElementById("inp-word").value;
+    const word = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${inputWord}`
+    );
+    const wordData = await word.json();
+    renderError(wordData);
 
-               
-    .catch(() => {
-        if (!window.navigator.onLine) {
-            result.innerHTML = `<h3 class="error">You are offline</h3>`;;
-          } 
-         else{
-            result.innerHTML = `<h3 class="error">Couldn't Find The Word</h3>`;
-         }
-        
-    });
+    renderWord(wordData[0], inputWord);
+  } catch (error) {
+    resultContainer.innerHTML = `<h3 class="error"> ${error.message}</h3>`;
+  }
+};
 
-              
-})
+search_Btn.addEventListener("click", loadResult);
 
+search_Box.addEventListener("keydown", function (e) {
+  return e.key === "Enter" ? loadResult() : null;
+});
